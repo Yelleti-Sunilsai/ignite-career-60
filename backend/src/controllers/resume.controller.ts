@@ -17,6 +17,12 @@ export const uploadResume = async (req: Request, res: Response) => {
     // Extract resume text
     const extractedText = await extractResumeText(req.file.path);
 
+    if (extractedText === "Failed to extract text" || !extractedText.trim()) {
+        return res.status(400).json({
+            message: "Failed to extract text from resume. Please ensure the file is not corrupted.",
+        });
+    }
+
     // Analyze with AI
     const aiAnalysisStr = await analyzeResume(extractedText);
     let aiAnalysis;

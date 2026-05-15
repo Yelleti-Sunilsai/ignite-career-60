@@ -42,10 +42,15 @@ function AnalysisPage() {
           const parsedResponse = JSON.parse(storedData);
           const aiRawContent = parsedResponse.aiAnalysis;
           
-          // Safe JSON extraction from AI string
-          const jsonMatch = aiRawContent.match(/\{[\s\S]*\}/);
-          const jsonStr = jsonMatch ? jsonMatch[0] : aiRawContent;
-          const parsedAI = JSON.parse(jsonStr);
+          let parsedAI;
+          if (typeof aiRawContent === 'string') {
+            // Safe JSON extraction from AI string
+            const jsonMatch = aiRawContent.match(/\{[\s\S]*\}/);
+            const jsonStr = jsonMatch ? jsonMatch[0] : aiRawContent;
+            parsedAI = JSON.parse(jsonStr);
+          } else {
+            parsedAI = aiRawContent;
+          }
 
           // Helper to ensure we always have an array
           const ensureArray = (val: any): string[] => {

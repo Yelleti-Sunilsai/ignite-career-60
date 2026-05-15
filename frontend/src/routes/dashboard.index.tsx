@@ -73,7 +73,7 @@ function Dashboard() {
               </Link>
             </div>
             <div className="mt-4 h-64">
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                 <AreaChart data={atsTrend}>
                   <defs>
                     <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
@@ -156,7 +156,7 @@ function Dashboard() {
             <div className="text-xs uppercase tracking-widest text-accent">Skill radar</div>
             <h3 className="mt-1 text-lg font-semibold">You vs Role</h3>
             <div className="mt-4 h-64">
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height="100%" minHeight={200}>
                 <RadarChart data={radar}>
                   <PolarGrid stroke="oklch(1 0 0 / 0.1)" />
                   <PolarAngleAxis dataKey="skill" tick={{ fill: "oklch(0.7 0.02 280)", fontSize: 10 }} />
