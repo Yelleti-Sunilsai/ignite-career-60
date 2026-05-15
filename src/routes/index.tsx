@@ -68,7 +68,7 @@ function Landing() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg" className="bg-gradient-primary text-white shadow-[0_0_30px_oklch(0.58_0.24_295/0.55)] hover:opacity-90">
-                <Link to="/upload">Analyze Resume <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link to="/dashboard/upload">Analyze Resume <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="glass border-white/10 hover:bg-white/5">
                 <Link to="/dashboard">Live Demo</Link>
