@@ -1,8 +1,14 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 
-import db from "../config/db";
 import generateToken from "../utils/generateToken";
+import User from "../models/User";
+import { sendOtpEmail } from "../utils/sendEmail";
+
+// Generate a random 6-digit OTP
+const generateOtp = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
 
 // ==========================
 // REGISTER USER
@@ -21,58 +27,52 @@ export const registerUser = async (
       });
     }
 
-    // Check if user already exists
-    db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email],
-      async (err, results: any) => {
-        if (err) {
-          return res.status(500).json({
-            message: "Database error",
-          });
-        }
+    const existingUser = await User.findOne({ email });
 
-        if (results.length > 0) {
-          return res.status(400).json({
-            message: "User already exists",
-          });
-        }
+    const otp = generateOtp();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        // Hash password
-        const hashedPassword = await bcrypt.hash(
-          password,
-          10
-        );
+    if (existingUser) {
+      if (existingUser.isVerified) {
+        return res.status(400).json({
+          message: "User already exists",
+        });
+      } else {
+        // Update unverified user with new OTP
+        existingUser.otp = otp;
+        existingUser.otpExpiry = otpExpiry;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        existingUser.password = hashedPassword;
+        existingUser.name = name;
+        await existingUser.save();
 
-        // Insert user into database
-        db.query(
-          "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-          [name, email, hashedPassword],
-          (err, result: any) => {
-            if (err) {
-              return res.status(500).json({
-                message: "Failed to register user",
-              });
-            }
-
-            // Generate JWT token
-            const token = generateToken(result.insertId);
-
-            // Send response
-            res.status(201).json({
-              message: "User registered successfully",
-              token,
-              user: {
-                id: result.insertId,
-                name,
-                email,
-              },
-            });
-          }
-        );
+        await sendOtpEmail(email, otp);
+        return res.status(200).json({
+          message: "OTP sent to your email",
+          email,
+        });
       }
-    );
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+      otp,
+      otpExpiry,
+      isVerified: false,
+    });
+
+    await sendOtpEmail(email, otp);
+
+    res.status(201).json({
+      message: "OTP sent to your email",
+      email,
+    });
   } catch (error) {
+    console.error("Register Error:", error);
     res.status(500).json({
       message: "Server Error",
     });
@@ -96,56 +96,89 @@ export const loginUser = async (
       });
     }
 
-    // Find user
-    db.query(
-      "SELECT * FROM users WHERE email = ?",
-      [email],
-      async (err, results: any) => {
-        if (err) {
-          return res.status(500).json({
-            message: "Database error",
-          });
-        }
+    const user = await User.findOne({ email });
 
-        // User not found
-        if (results.length === 0) {
-          return res.status(400).json({
-            message: "Invalid email or password",
-          });
-        }
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
 
-        const user = results[0];
+    if (!user.isVerified) {
+      return res.status(400).json({
+        message: "Please verify your email before logging in",
+      });
+    }
 
-        // Compare password
-        const isMatch = await bcrypt.compare(
-          password,
-          user.password
-        );
+    const isMatch = await bcrypt.compare(password, user.password);
 
-        if (!isMatch) {
-          return res.status(400).json({
-            message: "Invalid email or password",
-          });
-        }
+    if (!isMatch) {
+      return res.status(400).json({
+        message: "Invalid email or password",
+      });
+    }
 
-        // Generate token
-        const token = generateToken(user.id);
+    const token = generateToken(user.id);
 
-        // Send response
-        res.status(200).json({
-          message: "Login successful",
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-          },
-        });
-      }
-    );
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
   } catch (error) {
     res.status(500).json({
       message: "Server Error",
     });
+  }
+};
+
+// ==========================
+// VERIFY OTP
+// ==========================
+export const verifyOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Please provide email and OTP" });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "User already verified" });
+    }
+
+    if (user.otp !== otp || !user.otpExpiry || user.otpExpiry < new Date()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.isVerified = true;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    const token = generateToken(user.id);
+
+    res.status(200).json({
+      message: "Email verified successfully",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Server Error" });
   }
 };

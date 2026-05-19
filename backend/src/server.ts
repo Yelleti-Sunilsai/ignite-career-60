@@ -8,7 +8,7 @@ import cors from "cors";
 import resumeRoutes from "./routes/resume.routes";
 import authRoutes from "./routes/auth.routes";
 
-require("./config/db");
+import { databaseReady } from "./config/db";
 
 const app = express();
 
@@ -28,8 +28,15 @@ app.get("/", (req, res) => {
   );
 });
 
-app.listen(PORT, () => {
-  console.log(
-    `Server running on port ${PORT}`
-  );
-});
+databaseReady
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(
+        `Server running on port ${PORT}`
+      );
+    });
+  })
+  .catch(() => {
+    console.error("Server not started because database setup failed");
+    process.exit(1);
+  });

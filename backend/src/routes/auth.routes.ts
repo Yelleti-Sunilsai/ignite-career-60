@@ -3,6 +3,7 @@ import express from "express";
 import {
     registerUser,
     loginUser,
+    verifyOtp,
 } from "../controllers/auth.controller";
 
 import protect from "../middleware/auth.middleware";
@@ -10,6 +11,8 @@ import protect from "../middleware/auth.middleware";
 const router = express.Router();
 
 router.post("/register", registerUser);
+
+router.post("/verify-otp", verifyOtp);
 
 router.post("/login", loginUser);
 

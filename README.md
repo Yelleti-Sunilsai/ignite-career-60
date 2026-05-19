@@ -23,7 +23,7 @@ Ignite Career 60 is a premium, AI-powered platform designed to help job seekers 
 ### Backend
 - **Runtime**: Node.js + Express
 - **Language**: TypeScript
-- **Database**: MySQL
+- **Database**: MongoDB
 - **AI Integration**: OpenRouter / OpenAI-compatible API
 - **File Handling**: Multer (for resume uploads)
 - **Text Extraction**: pdf-parse / mammoth (for PDF and DOCX)
@@ -53,7 +53,7 @@ Ignite Career 60 is a premium, AI-powered platform designed to help job seekers 
 
 ### Prerequisites
 - Node.js (v18+)
-- MySQL Server
+- MongoDB Server or MongoDB Atlas
 - OpenRouter API Key
 
 ### Installation
