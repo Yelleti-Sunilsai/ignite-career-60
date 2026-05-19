@@ -27,7 +27,7 @@ app.get("/", (req, res) => {
     "AI Resume Analyzer Backend Running"
   );
 });
-
+//hello
 databaseReady
   .then(() => {
     app.listen(PORT, () => {
